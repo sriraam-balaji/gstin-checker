@@ -70,6 +70,21 @@ export class AppyflowProvider implements LookupProvider {
       throw new LookupError(body.message || 'Verification service returned no taxpayer data.', 'provider')
     }
 
+    /*
+     * The response must describe the GSTIN we asked about. Unactivated keys are
+     * served a canned sample record for a different taxpayer, which would
+     * otherwise be rendered as though it were the real owner of the number the
+     * user typed — attributing a real company to an unknown GSTIN. Attributing
+     * the wrong identity is worse than returning no answer at all.
+     */
+    if (info.gstin.toUpperCase() !== gstin.toUpperCase()) {
+      throw new LookupError(
+        `Verification service returned data for ${info.gstin} instead of ${gstin}. ` +
+          'This usually means the API key is inactive or still in demo mode — the response is a sample record, not real data.',
+        'provider',
+      )
+    }
+
     return {
       found: true,
       source: SOURCE,

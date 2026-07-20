@@ -8,13 +8,15 @@ binding = "GST_CACHE"
 id = "8d64dd22a2f84843a4a469b1da423ad6"
 
 [vars]
-# 'mock' keeps everything free and offline. Switch to 'appyflow' once a key is set.
-GST_PROVIDER = "mock"
+# 'mock' is free and offline; 'appyflow' hits the paid registry API.
+GST_PROVIDER = "appyflow"
 
 # "open" = no passphrase; the unguessable URL is the only thing limiting access.
-# Because of that, keep DAILY_LOOKUP_CAP low — it is the real spend ceiling.
+# Because of that, DAILY_LOOKUP_CAP is the real spend ceiling — keep it low.
+# Appyflow's free tier is 50 requests TOTAL, so 25/day means a single bad day
+# cannot exhaust it. Raise this after topping up.
 AUTH_MODE = "open"
-DAILY_LOOKUP_CAP = "50"
+DAILY_LOOKUP_CAP = "25"
 
 # Secrets are NOT set here. Set them with:
 #   npx wrangler pages secret put APP_PASSWORD

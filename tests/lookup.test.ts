@@ -193,6 +193,40 @@ describe('AppyflowProvider', () => {
     })
   })
 
+  /*
+   * Regression: an inactive key is served a canned sample record for a
+   * different taxpayer. Rendering that would attribute a real company to a
+   * GSTIN that may not exist — the worst failure available to a fraud tool.
+   */
+  test('rejects a response describing a different GSTIN than the one requested', async () => {
+    stubFetch({
+      json: async () => ({
+        taxpayerInfo: {
+          gstin: '03DOXPM4071K1ZE',
+          lgnm: 'DISHANT MAHAJAN',
+          tradeNam: 'AppyFlow Technologies',
+          sts: 'Active',
+        },
+      }),
+    })
+
+    await expect(new AppyflowProvider('key').lookup('27AAPFU0939F1ZV')).rejects.toMatchObject({
+      name: 'LookupError',
+      kind: 'provider',
+    })
+  })
+
+  test('accepts a matching GSTIN regardless of casing', async () => {
+    stubFetch({
+      json: async () => ({
+        taxpayerInfo: { gstin: '27aapfu0939f1zv', lgnm: 'ACME', sts: 'Active' },
+      }),
+    })
+
+    const result = await new AppyflowProvider('key').lookup('27AAPFU0939F1ZV')
+    expect(result.found).toBe(true)
+  })
+
   test('does not silently treat an unexplained empty payload as "not registered"', async () => {
     stubFetch({ json: async () => ({}) })
 
