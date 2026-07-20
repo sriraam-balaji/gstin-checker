@@ -17,8 +17,26 @@ interface GstinCheckResponse {
   data?: (GstnTaxpayer & { filing?: GstnFiling[] }) | null
 }
 
-/** errorCode values that mean "this GSTIN is genuinely not registered". */
-const NOT_FOUND_CODES = new Set(['GSTIN_INVALID', 'GSTIN_NOT_FOUND', 'NOT_FOUND', 'INVALID_GSTIN'])
+/**
+ * errorCode values that mean "this GSTIN is genuinely not registered".
+ * `GSTNUMBER_NOT_FOUND` is the code observed live; the others are defensive.
+ */
+const NOT_FOUND_CODES = new Set([
+  'GSTNUMBER_NOT_FOUND',
+  'GSTIN_NOT_FOUND',
+  'GSTIN_INVALID',
+  'NOT_FOUND',
+  'INVALID_GSTIN',
+])
+
+/**
+ * Vendors vary the exact spelling of their not-found code, so any code ending
+ * in NOT_FOUND counts. Deliberately narrow: it must not swallow auth or credit
+ * failures, which would report a lookup we never made as a missing GSTIN.
+ */
+function isNotFoundCode(code: string): boolean {
+  return NOT_FOUND_CODES.has(code) || code.endsWith('NOT_FOUND')
+}
 
 const AUTH_CODES = new Set(['API_KEY_INVALID', 'API_KEY_EXPIRED', 'UNAUTHORIZED'])
 
@@ -71,7 +89,7 @@ export class GstinCheckProvider implements LookupProvider {
       const code = body.errorCode ?? ''
       const message = body.message ?? 'Verification failed.'
 
-      if (NOT_FOUND_CODES.has(code)) return { found: false, source: SOURCE }
+      if (isNotFoundCode(code)) return { found: false, source: SOURCE }
       if (AUTH_CODES.has(code)) throw new LookupError(message, 'auth')
       if (QUOTA_CODES.has(code)) throw new LookupError(message, 'quota')
 

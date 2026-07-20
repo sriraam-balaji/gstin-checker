@@ -67,12 +67,27 @@ describe('GstinCheckProvider', () => {
     ])
   })
 
-  test('treats a not-found errorCode as a definitive negative', async () => {
-    stubJson({ flag: false, message: 'GSTIN not found', errorCode: 'GSTIN_NOT_FOUND', data: {} })
+  /* GSTNUMBER_NOT_FOUND is the code the live API actually returns. */
+  test.each([
+    ['GSTNUMBER_NOT_FOUND'],
+    ['GSTIN_NOT_FOUND'],
+    ['GSTIN_INVALID'],
+    ['SOME_VENDOR_NOT_FOUND'],
+  ])('treats errorCode %s as a definitive negative', async (errorCode) => {
+    stubJson({ flag: false, message: 'GST Number not found', errorCode, data: {} })
 
     const result = await new GstinCheckProvider('key').lookup(GSTIN)
     expect(result.found).toBe(false)
   })
+
+  test.each([['API_KEY_INVALID'], ['CREDIT_INSUFFICIENT']])(
+    'does not let %s be mistaken for a not-found result',
+    async (errorCode) => {
+      stubJson({ flag: false, message: 'nope', errorCode, data: {} })
+
+      await expect(new GstinCheckProvider('key').lookup(GSTIN)).rejects.toBeInstanceOf(LookupError)
+    },
+  )
 
   /* Captured verbatim from the live endpoint with a bogus key. */
   test('maps the real API_KEY_INVALID envelope to an auth error', async () => {
