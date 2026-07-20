@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GSTIN Validator</title>
+    <meta
+      name="description"
+      content="Validate an Indian GSTIN offline and check it against the GST registry."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="masthead">
+        <h1 class="masthead__title">GSTIN Validator</h1>
+        <p class="masthead__subtitle">
+          Checks structure and check digit offline, then verifies the number against the GST
+          registry.
+        </p>
+      </header>
+
+      <main>
+        <section class="panel" aria-labelledby="form-heading">
+          <h2 class="panel__heading" id="form-heading">Check a number</h2>
+
+          <form class="form" id="check-form" novalidate>
+            <div class="form__row">
+              <label class="form__label" for="gstin">GSTIN</label>
+              <input
+                class="form__input form__input--mono"
+                id="gstin"
+                name="gstin"
+                type="text"
+                inputmode="latin"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                maxlength="20"
+                placeholder="27AAPFU0939F1ZV"
+                aria-describedby="gstin-hint"
+                required
+              />
+              <p class="form__hint" id="gstin-hint">
+                15 characters. Spaces and hyphens are ignored.
+              </p>
+            </div>
+
+            <details class="disclosure">
+              <summary class="disclosure__summary">
+                Add context for stronger fraud checks (optional)
+              </summary>
+              <div class="disclosure__body">
+                <div class="form__row">
+                  <label class="form__label" for="expected-name">
+                    Who do you expect this to be?
+                  </label>
+                  <input
+                    class="form__input"
+                    id="expected-name"
+                    name="expectedName"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="Acme Enterprises Pvt Ltd"
+                    aria-describedby="expected-name-hint"
+                  />
+                  <p class="form__hint" id="expected-name-hint">
+                    The most useful check available. A GSTIN quoted under someone else's name is a
+                    common invoice fraud.
+                  </p>
+                </div>
+
+                <div class="form__row">
+                  <label class="form__label" for="expected-state">Expected state</label>
+                  <select class="form__input" id="expected-state" name="expectedStateCode">
+                    <option value="">No preference</option>
+                  </select>
+                  <p class="form__hint">
+                    Flags a GSTIN registered somewhere other than the supplier's stated address.
+                  </p>
+                </div>
+              </div>
+            </details>
+
+            <button class="button" id="submit" type="submit">Check GSTIN</button>
+          </form>
+        </section>
+
+        <section
+          class="results"
+          id="results"
+          aria-live="polite"
+          aria-atomic="true"
+          hidden
+        ></section>
+      </main>
+
+      <footer class="footer">
+        <p>
+          Offline checks prove a number is well-formed. Registry checks prove it exists and is
+          active. Neither proves an invoice is genuine — a real, active GSTIN can still appear on a
+          fabricated one.
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

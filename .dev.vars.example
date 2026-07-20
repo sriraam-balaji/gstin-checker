@@ -1,0 +1,13 @@
+# Copy to .dev.vars for local development with `wrangler pages dev`.
+# .dev.vars is gitignored — never commit real values.
+
+APP_PASSWORD=choose-a-local-passphrase
+AUTH_SECRET=any-long-random-string-used-to-sign-the-session-cookie
+
+# Leave as 'mock' to develop for free against fixtures.
+GST_PROVIDER=mock
+
+# Only needed when GST_PROVIDER=appyflow
+GST_API_KEY=
+
+DAILY_LOOKUP_CAP=200

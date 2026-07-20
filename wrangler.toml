@@ -1,0 +1,20 @@
+name = "gst-validator"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "dist"
+
+# Cache for registry lookups + the daily spend counter.
+# Create with:  npx wrangler kv namespace create GST_CACHE
+# then paste the returned id below.
+# [[kv_namespaces]]
+# binding = "GST_CACHE"
+# id = "<paste-namespace-id>"
+
+[vars]
+# 'mock' keeps everything free and offline. Switch to 'appyflow' once a key is set.
+GST_PROVIDER = "mock"
+DAILY_LOOKUP_CAP = "200"
+
+# Secrets are NOT set here. Set them with:
+#   npx wrangler pages secret put APP_PASSWORD
+#   npx wrangler pages secret put AUTH_SECRET
+#   npx wrangler pages secret put GST_API_KEY

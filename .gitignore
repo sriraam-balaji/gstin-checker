@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.wrangler/
+
+# Secrets — never commit
+.dev.vars
+.env
+.env.*
+!.dev.vars.example
+
+*.log
+.DS_Zone
+.DS_Store

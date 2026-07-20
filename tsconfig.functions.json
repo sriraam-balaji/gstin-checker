@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Pages Functions run on the Workers runtime, whose globals conflict with
+    // the DOM lib. Kept in a separate project so the two never mix.
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["functions/**/*.ts", "src/core/**/*.ts", "src/risk/**/*.ts", "src/lookup/**/*.ts"]
+}
