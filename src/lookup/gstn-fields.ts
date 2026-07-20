@@ -112,9 +112,11 @@ export function toTaxpayerRecord(
   }
 
   if (info.gstin.toUpperCase() !== requestedGstin.toUpperCase()) {
+    // Leads with the consequence for the reader; the diagnostic detail follows.
     throw new LookupError(
-      `${providerName} returned data for ${info.gstin} instead of ${requestedGstin}. ` +
-        'This usually means the API key is inactive or in sandbox mode — the response is a sample record, not real data.',
+      'The registry check is not active, so this number could not be looked up. ' +
+        `(${providerName} is in sandbox mode — it returned a sample record for ${info.gstin} ` +
+        `instead of real data for ${requestedGstin}. Activating paid credits fixes this.)`,
       'provider',
     )
   }
