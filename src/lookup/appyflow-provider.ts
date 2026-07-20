@@ -53,8 +53,18 @@ export class AppyflowProvider implements LookupProvider {
     if (!info || !info.gstin) {
       // Appyflow signals an unregistered GSTIN via an error flag rather than 404.
       if (isNotFound(body)) return { found: false, source: SOURCE }
+
+      const raw = String(body.message ?? '')
+      if (isKeyProblem(raw)) {
+        throw new LookupError(
+          'The registry check is not active, so this number could not be looked up. ' +
+            `(The verification service rejected the API key: "${raw}". A key with paid credits fixes this.)`,
+          'auth',
+        )
+      }
+
       throw new LookupError(
-        body.message || 'Verification service returned no taxpayer data.',
+        raw || 'Verification service returned no taxpayer data.',
         'provider',
       )
     }
@@ -65,6 +75,14 @@ export class AppyflowProvider implements LookupProvider {
       record: toTaxpayerRecord(info, body.filing, gstin, 'Appyflow'),
     }
   }
+}
+
+/** Appyflow reports key and credit problems as a 200 with a message, not an HTTP error. */
+function isKeyProblem(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('key') || m.includes('credit') || m.includes('subscri') || m.includes('unauthor')
+  )
 }
 
 function isNotFound(body: AppyflowResponse): boolean {

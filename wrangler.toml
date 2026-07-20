@@ -1,4 +1,6 @@
-name = "gst-validator"
+# Must match the Cloudflare Pages project name exactly, or git-connected
+# builds fail before they start.
+name = "gst-check-1fd499c51792"
 compatibility_date = "2026-01-01"
 pages_build_output_dir = "dist"
 
@@ -8,8 +10,8 @@ binding = "GST_CACHE"
 id = "8d64dd22a2f84843a4a469b1da423ad6"
 
 [vars]
-# 'mock' is free and offline; 'appyflow' hits the paid registry API.
-GST_PROVIDER = "appyflow"
+# 'mock' is free and offline; 'appyflow' and 'gstincheck' hit paid registry APIs.
+GST_PROVIDER = "gstincheck"
 
 # "open" = no passphrase; the unguessable URL is the only thing limiting access.
 # Because of that, DAILY_LOOKUP_CAP is the real spend ceiling — keep it low.

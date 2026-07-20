@@ -279,6 +279,22 @@ describe('AppyflowProvider', () => {
     expect(result.found).toBe(true)
   })
 
+  /* Observed live: a key/credit problem arrives as HTTP 200 with a message. */
+  test.each([['Invalid Key Secret'], ['Insufficient credits'], ['Subscription expired']])(
+    'reports "%s" as an auth failure, not as an unregistered GSTIN',
+    async (message) => {
+      stubFetch({ json: async () => ({ message }) })
+
+      const error = await new AppyflowProvider('key')
+        .lookup('27AAPFU0939F1ZV')
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(LookupError)
+      expect((error as LookupError).kind).toBe('auth')
+      expect((error as LookupError).message).toContain('registry check is not active')
+    },
+  )
+
   test('does not silently treat an unexplained empty payload as "not registered"', async () => {
     stubFetch({ json: async () => ({}) })
 
