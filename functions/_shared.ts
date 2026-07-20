@@ -1,4 +1,6 @@
 export interface Env {
+  /** Set to "open" to serve /api/* without a passphrase. Any other value keeps the gate on. */
+  AUTH_MODE?: string
   /** Passphrase that gates the whole app. */
   APP_PASSWORD?: string
   /** Signing key for the session cookie. */

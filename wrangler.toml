@@ -3,16 +3,18 @@ compatibility_date = "2026-01-01"
 pages_build_output_dir = "dist"
 
 # Cache for registry lookups + the daily spend counter.
-# Create with:  npx wrangler kv namespace create GST_CACHE
-# then paste the returned id below.
-# [[kv_namespaces]]
-# binding = "GST_CACHE"
-# id = "<paste-namespace-id>"
+[[kv_namespaces]]
+binding = "GST_CACHE"
+id = "8d64dd22a2f84843a4a469b1da423ad6"
 
 [vars]
 # 'mock' keeps everything free and offline. Switch to 'appyflow' once a key is set.
 GST_PROVIDER = "mock"
-DAILY_LOOKUP_CAP = "200"
+
+# "open" = no passphrase; the unguessable URL is the only thing limiting access.
+# Because of that, keep DAILY_LOOKUP_CAP low — it is the real spend ceiling.
+AUTH_MODE = "open"
+DAILY_LOOKUP_CAP = "50"
 
 # Secrets are NOT set here. Set them with:
 #   npx wrangler pages secret put APP_PASSWORD

@@ -49,6 +49,43 @@ describe('MockLookupProvider', () => {
     const result = await new MockLookupProvider().lookup('99ZZZZZ9999Z9ZZ')
     expect(result.found).toBe(false)
   })
+
+  /*
+   * Regression: fixture dates were once computed at module scope. The Workers
+   * runtime restricts time during global initialization, so they resolved from
+   * the Unix epoch — making every fixture look decades dormant in production
+   * while passing locally. Dates must be derived per call.
+   */
+  test('derives filing dates at call time, not at module load', async () => {
+    const provider = new MockLookupProvider()
+
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-07-20T00:00:00Z'))
+      const first = await provider.lookup('27AAPFU0939F1ZV')
+
+      vi.setSystemTime(new Date('2027-01-15T00:00:00Z'))
+      const second = await provider.lookup('27AAPFU0939F1ZV')
+
+      expect(first.found && second.found).toBe(true)
+      if (!first.found || !second.found) return
+
+      expect(first.record.filings[0]!.filedOn).toBe('2026-06-30')
+      expect(second.record.filings[0]!.filedOn).toBe('2026-12-26')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test('the clean fixture stays recent enough to produce no filing signal', async () => {
+    const result = await new MockLookupProvider().lookup('27AAPFU0939F1ZV')
+    expect(result.found).toBe(true)
+    if (!result.found) return
+
+    const filedOn = result.record.filings[0]!.filedOn!
+    const ageDays = (Date.now() - Date.parse(`${filedOn}T00:00:00Z`)) / 86_400_000
+    expect(ageDays).toBeLessThan(90)
+  })
 })
 
 function stubFetch(response: Partial<Response> & { json?: () => Promise<unknown> }): void {
