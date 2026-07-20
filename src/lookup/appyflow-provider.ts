@@ -17,7 +17,21 @@ interface AppyflowTaxpayer {
   dty?: string
   nba?: string[]
   stj?: string
-  pradr?: { adr?: string }
+  panNo?: string
+  /** `addr` is the documented shape; `adr` appears in some older responses. */
+  pradr?: { addr?: AppyflowAddress; adr?: string }
+}
+
+interface AppyflowAddress {
+  bno?: string
+  bnm?: string
+  flno?: string
+  st?: string
+  loc?: string
+  city?: string
+  dst?: string
+  stcd?: string
+  pncd?: string
 }
 
 interface AppyflowResponse {
@@ -99,11 +113,30 @@ export class AppyflowProvider implements LookupProvider {
         taxpayerType: info.dty || undefined,
         natureOfBusiness: info.nba ?? [],
         stateJurisdiction: info.stj || undefined,
-        address: info.pradr?.adr || undefined,
+        address: formatAddress(info.pradr),
         filings: mapFilings(body.filing),
       },
     }
   }
+}
+
+/**
+ * The principal address arrives as separate components, most of which are
+ * routinely blank, so they are joined in postal order and empties dropped.
+ */
+function formatAddress(pradr: AppyflowTaxpayer['pradr']): string | undefined {
+  if (!pradr) return undefined
+  if (pradr.adr) return pradr.adr
+
+  const a = pradr.addr
+  if (!a) return undefined
+
+  const line = [a.bno, a.bnm, a.flno, a.st, a.loc, a.city, a.dst, a.stcd, a.pncd]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .join(', ')
+
+  return line || undefined
 }
 
 function isNotFound(body: AppyflowResponse): boolean {

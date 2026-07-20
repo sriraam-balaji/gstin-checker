@@ -216,6 +216,58 @@ describe('AppyflowProvider', () => {
     })
   })
 
+  /*
+   * Captured from a real production response. The principal address arrives as
+   * a component object under `pradr.addr`, not the flat `pradr.adr` string the
+   * adapter originally expected, so addresses silently came back empty.
+   */
+  test('composes the principal address from real response components', async () => {
+    stubFetch({
+      json: async () => ({
+        taxpayerInfo: {
+          gstin: '03DOXPM4071K1ZE',
+          lgnm: 'DISHANT MAHAJAN',
+          tradeNam: 'AppyFlow Technologies',
+          sts: 'Active',
+          rgdt: '17/12/2019',
+          cxdt: '',
+          ctb: 'Proprietorship',
+          dty: 'Regular',
+          nba: ['Office / Sale Office'],
+          stj: 'Ludhiana 3 - Ward No.54',
+          pradr: {
+            addr: {
+              bnm: '',
+              loc: 'Ganesh Nagar',
+              st: 'Street no 1',
+              bno: '3018 Shop no 5',
+              stcd: 'Punjab',
+              dst: 'Ludhiana',
+              city: '',
+              flno: '',
+              pncd: '141008',
+            },
+          },
+        },
+        compliance: { filingFrequency: null },
+        filing: [],
+        error: false,
+      }),
+    })
+
+    const result = await new AppyflowProvider('key').lookup('03DOXPM4071K1ZE')
+
+    expect(result.found).toBe(true)
+    if (!result.found) return
+    expect(result.record.address).toBe(
+      '3018 Shop no 5, Street no 1, Ganesh Nagar, Ludhiana, Punjab, 141008',
+    )
+    expect(result.record.registrationDate).toBe('2019-12-17')
+    // An empty cxdt must not become an Invalid Date.
+    expect(result.record.cancellationDate).toBeUndefined()
+    expect(result.record.constitution).toBe('Proprietorship')
+  })
+
   test('accepts a matching GSTIN regardless of casing', async () => {
     stubFetch({
       json: async () => ({
