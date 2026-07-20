@@ -47,7 +47,7 @@ That last distinction is deliberate: an API outage must never be reported to you
 
 ```bash
 npm install
-npm test          # 69 tests, no network, no API credits
+npm test          # 95 tests, no network, no API credits
 npm run dev       # UI only, offline validation
 ```
 
@@ -70,21 +70,40 @@ Ships with `GST_PROVIDER=mock`, so everything above is free and offline. The moc
 | `06AABCT3518Q1Z0` | caution — dormant |
 | `24AAACC1206D1ZM` | caution — newly registered |
 
+## Providers
+
+Two live providers ship, selected with `GST_PROVIDER`. Both consume the same
+`GST_API_KEY` secret and return GSTN's standard field names, so switching is a
+one-word config change.
+
+| `GST_PROVIDER` | Service | Notes |
+|---|---|---|
+| `gstincheck` | [gstincheck.co.in](https://gstincheck.co.in/) | 20 free verifications that return **real registry data**. Then ₹0.60–0.80/credit. |
+| `appyflow` | [appyflow.in](https://appyflow.in/verify-gst/) | Free credits are **sandbox only** — they return a fixed sample record for every GSTIN regardless of what you ask for, so the free tier cannot verify anything. Real data needs paid credits at ₹0.40–0.50/request. |
+| `mock` | — | Local fixtures. Free, offline, used by the test suite. |
+
+The Appyflow caveat is worth repeating because their marketing advertises "50
+free requests" without saying they are sandbox-only. The adapter detects this:
+if a provider returns a record for a different GSTIN than the one requested,
+the lookup fails loudly rather than presenting the sample record as real. See
+`toTaxpayerRecord` in `src/lookup/gstn-fields.ts`.
+
 ## Going live
 
-1. Sign up at [appyflow.in](https://appyflow.in/verify-gst/) — 50 free requests, then ₹0.50 each (₹0.40 above ₹1,000).
+1. Get a key from one of the providers above.
 2. Create the KV namespace and uncomment the binding in `wrangler.toml`:
    ```bash
    npx wrangler kv namespace create GST_CACHE
    ```
 3. Set secrets:
    ```bash
+   npx wrangler pages secret put GST_API_KEY
+   # Only if AUTH_MODE is not "open":
    npx wrangler pages secret put APP_PASSWORD
    npx wrangler pages secret put AUTH_SECRET   # any long random string
-   npx wrangler pages secret put GST_API_KEY
    ```
-4. Set `GST_PROVIDER = "appyflow"` in `wrangler.toml`.
-5. `npm run deploy`
+4. Set `GST_PROVIDER` in `wrangler.toml` to `gstincheck` or `appyflow`.
+5. `npm run deploy` — or just push to `main` if the project is git-connected.
 
 ### Using a different provider
 
@@ -94,9 +113,14 @@ Implement `LookupProvider` (one method, `lookup(gstin)`) in `src/lookup/`, and a
 
 Each live lookup costs money, so three things guard the endpoint:
 
-- **Passphrase gate** on all `/api/*` routes, HMAC-signed HttpOnly cookie
+- **Passphrase gate** on all `/api/*` routes, HMAC-signed HttpOnly cookie.
+  Disabled only by setting `AUTH_MODE="open"` explicitly — a missing
+  `APP_PASSWORD` returns a 500 rather than silently serving unauthenticated
+  traffic, because failing open by accident on an endpoint that spends money
+  per request is not an acceptable default.
 - **24h KV cache** — repeat lookups of the same GSTIN are free
-- **Daily cap** (`DAILY_LOOKUP_CAP`, default 200) — fails closed to `unverified` rather than draining credit
+- **Daily cap** (`DAILY_LOOKUP_CAP`) — fails closed to `unverified` rather than
+  draining credit. Keep it below your total free quota if running on one.
 
 Offline validation always runs first, so a malformed number never reaches a paid call.
 
@@ -114,5 +138,5 @@ src/risk/     signal rules, verdict derivation, name matching
 src/lookup/   provider interface, mock, Appyflow adapter
 src/web/      UI
 functions/    Cloudflare Pages Functions — auth, cache, rate cap, verify
-tests/        69 tests
+tests/        95 tests
 ```
