@@ -2,6 +2,7 @@ import { validateGstin } from '../../src/core/validate.js'
 import { assessRisk } from '../../src/risk/assess.js'
 import { MockLookupProvider } from '../../src/lookup/mock-provider.js'
 import { AppyflowProvider } from '../../src/lookup/appyflow-provider.js'
+import { GstinCheckProvider } from '../../src/lookup/gstincheck-provider.js'
 import { LookupError } from '../../src/lookup/types.js'
 import type { LookupOutcome, LookupProvider } from '../../src/lookup/types.js'
 import { json, type Env } from '../_shared.js'
@@ -76,13 +77,21 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 }
 
 function resolveProvider(env: Env): LookupProvider {
-  if (env.GST_PROVIDER === 'appyflow') {
-    if (!env.GST_API_KEY) {
-      throw new LookupError('Live lookup is selected but GST_API_KEY is not set.', 'config')
-    }
-    return new AppyflowProvider(env.GST_API_KEY)
+  const provider = env.GST_PROVIDER ?? 'mock'
+  if (provider === 'mock') return new MockLookupProvider()
+
+  if (!env.GST_API_KEY) {
+    throw new LookupError(`Provider "${provider}" is selected but GST_API_KEY is not set.`, 'config')
   }
-  return new MockLookupProvider()
+
+  switch (provider) {
+    case 'appyflow':
+      return new AppyflowProvider(env.GST_API_KEY)
+    case 'gstincheck':
+      return new GstinCheckProvider(env.GST_API_KEY)
+    default:
+      throw new LookupError(`Unknown GST_PROVIDER "${provider}".`, 'config')
+  }
 }
 
 /* ---------- KV cache: registry data is stable enough for a 24h TTL ---------- */
