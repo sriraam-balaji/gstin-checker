@@ -12,3 +12,6 @@ coverage/
 *.log
 .DS_Zone
 .DS_Store
+
+# Built artifact — regenerate with: npm run build:standalone
+dist-standalone/
