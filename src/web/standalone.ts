@@ -127,7 +127,13 @@ async function check(): Promise<void> {
     now: new Date(),
   })
 
-  renderAssessment(results, assessment, validation, lookup?.found ? lookup.record : null)
+  renderAssessment(
+    results,
+    assessment,
+    validation,
+    lookup?.found ? lookup.record : null,
+    lookup?.diagnostics,
+  )
 }
 
 function setBusy(busy: boolean): void {

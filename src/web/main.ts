@@ -3,13 +3,14 @@ import { assessRisk } from '../risk/assess.js'
 import { STATE_CODES } from '../core/state-codes.js'
 import { renderAssessment, populateStates } from './render.js'
 import type { RiskAssessment } from '../risk/types.js'
-import type { TaxpayerRecord } from '../lookup/types.js'
+import type { LookupDiagnostics, TaxpayerRecord } from '../lookup/types.js'
 
 /** Hosted entry point: the API key stays server-side behind a Pages Function. */
 
 interface VerifyResponse {
   assessment: RiskAssessment
   record: TaxpayerRecord | null
+  diagnostics: LookupDiagnostics | null
 }
 
 const form = document.querySelector<HTMLFormElement>('#check-form')!
@@ -62,7 +63,7 @@ async function check(): Promise<void> {
     }
 
     const payload = (await response.json()) as VerifyResponse
-    renderAssessment(results, payload.assessment, validation, payload.record)
+    renderAssessment(results, payload.assessment, validation, payload.record, payload.diagnostics)
   } catch {
     renderAssessment(
       results,

@@ -73,6 +73,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   return json({
     assessment,
     record: lookup?.found ? lookup.record : null,
+    diagnostics: lookup?.diagnostics ?? null,
   })
 }
 

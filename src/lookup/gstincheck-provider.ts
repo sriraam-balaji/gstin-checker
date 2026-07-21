@@ -1,7 +1,7 @@
 import { toTaxpayerRecord } from './gstn-fields.js'
-import { LookupError } from './types.js'
+import { LookupError, redactKey } from './types.js'
 import type { GstnFiling, GstnTaxpayer } from './gstn-fields.js'
-import type { LookupOutcome, LookupProvider } from './types.js'
+import type { LookupDiagnostics, LookupOutcome, LookupProvider } from './types.js'
 
 const BASE_URL = 'https://sheet.gstincheck.co.in/check'
 const SOURCE = 'gstincheck'
@@ -59,6 +59,7 @@ export class GstinCheckProvider implements LookupProvider {
 
   async lookup(gstin: string): Promise<LookupOutcome> {
     const url = `${BASE_URL}/${encodeURIComponent(this.apiKey)}/${encodeURIComponent(gstin)}`
+    const startedAt = Date.now()
 
     let response: Response
     try {
@@ -77,11 +78,23 @@ export class GstinCheckProvider implements LookupProvider {
       throw new LookupError(`Verification service returned HTTP ${response.status}.`, 'provider')
     }
 
+    // Read as text first so the exact bytes can be shown as evidence.
+    const rawText = await response.text().catch(() => '')
+
     let body: GstinCheckResponse
     try {
-      body = (await response.json()) as GstinCheckResponse
+      body = JSON.parse(rawText) as GstinCheckResponse
     } catch {
       throw new LookupError('Verification service returned a malformed response.', 'provider')
+    }
+
+    const diagnostics: LookupDiagnostics = {
+      provider: SOURCE,
+      endpoint: redactKey(url, this.apiKey),
+      httpStatus: response.status,
+      durationMs: Date.now() - startedAt,
+      fetchedAt: new Date().toISOString(),
+      rawResponse: prettyJson(rawText),
     }
 
     // The envelope reports failure via `flag`, not the HTTP status.
@@ -89,7 +102,7 @@ export class GstinCheckProvider implements LookupProvider {
       const code = body.errorCode ?? ''
       const message = body.message ?? 'Verification failed.'
 
-      if (isNotFoundCode(code)) return { found: false, source: SOURCE }
+      if (isNotFoundCode(code)) return { found: false, source: SOURCE, diagnostics }
       if (AUTH_CODES.has(code)) throw new LookupError(message, 'auth')
       if (QUOTA_CODES.has(code)) throw new LookupError(message, 'quota')
 
@@ -112,7 +125,17 @@ export class GstinCheckProvider implements LookupProvider {
     return {
       found: true,
       source: SOURCE,
+      diagnostics,
       record: toTaxpayerRecord(data, data.filing, gstin, 'GSTINCheck'),
     }
+  }
+}
+
+/** Formats the response for display, falling back to raw text if unparseable. */
+function prettyJson(text: string): string {
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2)
+  } catch {
+    return text
   }
 }

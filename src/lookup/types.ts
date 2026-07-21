@@ -28,9 +28,39 @@ export interface TaxpayerRecord {
   readonly filings: readonly FilingRecord[]
 }
 
+/**
+ * Evidence that a result came from a live call rather than canned data.
+ * Surfaced in the UI so a reviewer can confirm the tool is really querying the
+ * registry. `endpoint` always has the API key redacted — this is shown on
+ * screen and must be safe to display to someone else.
+ */
+export interface LookupDiagnostics {
+  readonly provider: string
+  readonly endpoint: string
+  readonly httpStatus: number
+  readonly durationMs: number
+  readonly fetchedAt: string
+  readonly rawResponse: string
+}
+
 export type LookupOutcome =
-  | { readonly found: true; readonly record: TaxpayerRecord; readonly source: string }
-  | { readonly found: false; readonly source: string }
+  | {
+      readonly found: true
+      readonly record: TaxpayerRecord
+      readonly source: string
+      readonly diagnostics?: LookupDiagnostics
+    }
+  | {
+      readonly found: false
+      readonly source: string
+      readonly diagnostics?: LookupDiagnostics
+    }
+
+/** Replaces the API key in a URL with a placeholder before it is displayed. */
+export function redactKey(url: string, key: string): string {
+  if (!key) return url
+  return url.split(encodeURIComponent(key)).join('***KEY-REDACTED***').split(key).join('***KEY-REDACTED***')
+}
 
 /**
  * Thrown when the lookup could not be completed. Deliberately distinct from a

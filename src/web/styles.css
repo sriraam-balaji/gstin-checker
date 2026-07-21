@@ -390,6 +390,54 @@ body {
   letter-spacing: 0.05em;
 }
 
+/* Live API evidence */
+
+.diagnostics {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.diagnostics__summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.diagnostics__summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.diagnostics details[open] .diagnostics__summary {
+  margin-bottom: 0.85rem;
+}
+
+.diagnostics__label {
+  margin: 0.9rem 0 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.diagnostics__raw {
+  margin: 0;
+  padding: 0.85rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: "SF Mono", "Cascadia Mono", Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
 /* Footer */
 
 .footer {

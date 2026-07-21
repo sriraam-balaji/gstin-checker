@@ -11,7 +11,13 @@ function stubJson(payload: unknown, init: Partial<Response> = {}): void {
     'fetch',
     vi.fn(
       async () =>
-        ({ ok: true, status: 200, json: async () => payload, ...init }) as unknown as Response,
+        ({
+          ok: true,
+          status: 200,
+          json: async () => payload,
+          text: async () => JSON.stringify(payload),
+          ...init,
+        }) as unknown as Response,
     ),
   )
 }
@@ -138,6 +144,20 @@ describe('GstinCheckProvider', () => {
     await expect(new GstinCheckProvider('key').lookup(GSTIN)).rejects.toBeInstanceOf(LookupError)
   })
 
+  test('surfaces a body that is not valid JSON as a provider error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          ({ ok: true, status: 200, text: async () => 'not json at all' }) as unknown as Response,
+      ),
+    )
+
+    await expect(new GstinCheckProvider('key').lookup(GSTIN)).rejects.toMatchObject({
+      kind: 'provider',
+    })
+  })
+
   test.each([
     [401, 'auth'],
     [429, 'quota'],
@@ -161,6 +181,30 @@ describe('GstinCheckProvider', () => {
     })
   })
 
+  test('attaches diagnostics with the key redacted from the endpoint', async () => {
+    stubJson({ flag: true, message: 'success', data: taxpayer() })
+
+    const result = await new GstinCheckProvider('super-secret-key').lookup(GSTIN)
+
+    expect(result.diagnostics).toBeDefined()
+    const d = result.diagnostics!
+    expect(d.provider).toBe('gstincheck')
+    expect(d.httpStatus).toBe(200)
+    expect(d.endpoint).not.toContain('super-secret-key')
+    expect(d.endpoint).toContain('***KEY-REDACTED***')
+    expect(d.rawResponse).toContain('"flag": true')
+    expect(() => new Date(d.fetchedAt).toISOString()).not.toThrow()
+  })
+
+  test('attaches diagnostics on a not-found result too', async () => {
+    stubJson({ flag: false, errorCode: 'GSTNUMBER_NOT_FOUND', message: 'not found', data: {} })
+
+    const result = await new GstinCheckProvider('key').lookup(GSTIN)
+
+    expect(result.found).toBe(false)
+    expect(result.diagnostics?.provider).toBe('gstincheck')
+  })
+
   test('sends the key and GSTIN in the URL path over HTTPS', async () => {
     const spy = vi.fn(
       async (_url: string, _init?: RequestInit) =>
@@ -168,6 +212,7 @@ describe('GstinCheckProvider', () => {
           ok: true,
           status: 200,
           json: async () => ({ flag: true, data: taxpayer() }),
+          text: async () => JSON.stringify({ flag: true, data: taxpayer() }),
         }) as unknown as Response,
     )
     vi.stubGlobal('fetch', spy)

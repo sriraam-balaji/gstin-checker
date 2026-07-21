@@ -1,6 +1,6 @@
 import type { ValidationResult } from '../core/types.js'
 import type { RiskAssessment } from '../risk/types.js'
-import type { TaxpayerRecord } from '../lookup/types.js'
+import type { LookupDiagnostics, TaxpayerRecord } from '../lookup/types.js'
 
 /**
  * Renders an assessment into a container. Shared by both entry points: the
@@ -12,12 +12,17 @@ export function renderAssessment(
   assessment: RiskAssessment,
   validation: ValidationResult,
   record: TaxpayerRecord | null,
+  diagnostics?: LookupDiagnostics | null,
 ): void {
   results.replaceChildren()
   results.append(verdictBanner(assessment))
 
   if (assessment.signals.length > 0) {
     results.append(signalList(assessment.signals))
+  }
+
+  if (diagnostics) {
+    results.append(diagnosticsPanel(diagnostics))
   }
 
   if (record) {
@@ -144,6 +149,55 @@ function detailTable(
 
   table.append(body)
   section.append(title, table)
+  return section
+}
+
+/**
+ * Shows the exact HTTP call that produced this result — endpoint (key
+ * redacted), status, timing, and the raw response body verbatim. Exists so a
+ * reviewer can confirm the tool is querying a live registry rather than
+ * displaying static or precomputed data.
+ */
+function diagnosticsPanel(diagnostics: LookupDiagnostics): HTMLElement {
+  const section = document.createElement('details')
+  section.className = 'diagnostics'
+
+  const summary = document.createElement('summary')
+  summary.className = 'diagnostics__summary'
+  summary.textContent = 'Live API evidence (for verification, not normally needed)'
+
+  const meta = document.createElement('table')
+  meta.className = 'detail__table'
+  const body = document.createElement('tbody')
+  const rows: readonly [string, string][] = [
+    ['Provider', diagnostics.provider],
+    ['Endpoint called', diagnostics.endpoint],
+    ['HTTP status', String(diagnostics.httpStatus)],
+    ['Response time', `${diagnostics.durationMs} ms`],
+    ['Fetched at', new Date(diagnostics.fetchedAt).toLocaleString()],
+  ]
+  for (const [key, value] of rows) {
+    const row = document.createElement('tr')
+    const th = document.createElement('th')
+    th.scope = 'row'
+    th.textContent = key
+    const td = document.createElement('td')
+    td.className = 'detail__code'
+    td.textContent = value
+    row.append(th, td)
+    body.append(row)
+  }
+  meta.append(body)
+
+  const rawLabel = document.createElement('p')
+  rawLabel.className = 'diagnostics__label'
+  rawLabel.textContent = 'Raw response body, exactly as returned:'
+
+  const raw = document.createElement('pre')
+  raw.className = 'diagnostics__raw'
+  raw.textContent = diagnostics.rawResponse
+
+  section.append(summary, meta, rawLabel, raw)
   return section
 }
 
